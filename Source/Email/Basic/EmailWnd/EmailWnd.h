@@ -2,6 +2,10 @@
 
 #include "Email.h"
 #include "Blueprint/UserWidget.h"
+#include "Templates/Tuple.h"
+
+#include "../Enum/ErrorType.h"
+
 #include "EmailWnd.generated.h"
 
 UCLASS()
@@ -18,6 +22,14 @@ private :
 
 protected:
 	virtual void NativeConstruct() override;
+
+private :
+	int32 GetAtNum(FString str);
+
+	TTuple <FString, FString> GetIdAndDomainInAt(FString str);
+
+private :
+	void OuputErrorText(EErrorType errorType);
 
 private:
 	UFUNCTION()
