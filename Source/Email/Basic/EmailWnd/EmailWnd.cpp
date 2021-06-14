@@ -12,10 +12,10 @@ void UEmailWnd::NativeConstruct()
 	GetWorld()->GetFirstPlayerController()->bShowMouseCursor = true;
 }
 
-
-int32 UEmailWnd::GetAtNum(FString str)
+bool UEmailWnd::GetIsAt(FString str)
 {
 	int32 atCount = 0;
+
 
 	for (int i = 0; i < str.Len(); ++i)
 	{
@@ -23,7 +23,23 @@ int32 UEmailWnd::GetAtNum(FString str)
 			atCount++;
 	}
 
-	return atCount;
+	if (atCount != 0)
+	{
+		FString inQuotationMark = GetInQuotationMark(str);
+
+		if (str.Compare(inQuotationMark) == 0) return true;
+
+		int32 AtinQuotationMarkCount = 0;
+		for (int i = 0; i < inQuotationMark.Len(); ++i)
+		{
+			if (inQuotationMark[i] == TCHAR(TEXT('@')))
+				AtinQuotationMarkCount++;
+		}
+
+		if (atCount > AtinQuotationMarkCount) return true;
+	}
+
+	return false;
 }
 
 TTuple<FString, FString> UEmailWnd::GetIdAndDomainInAt(FString str)
@@ -36,9 +52,7 @@ TTuple<FString, FString> UEmailWnd::GetIdAndDomainInAt(FString str)
 
 	FString read = TEXT("@");
 
-	int32 index = str.Find(read, ESearchCase::IgnoreCase ,ESearchDir::FromEnd, str.Len());
-
-	UE_LOG(LogTemp, Warning, TEXT("%d"), index);
+	int32 index = str.Find(read, ESearchCase::IgnoreCase, ESearchDir::FromEnd, str.Len());
 
 	for (int i = 0; i < index; ++i)
 	{
@@ -57,7 +71,7 @@ void UEmailWnd::OuputErrorText(EErrorType errorType)
 {
 	switch (errorType)
 	{
-	case EErrorType::ET_ATZERO :
+	case EErrorType::ET_ATZERO:
 		Text_Output->SetText(FText::FromString(TEXT("@ 를 찾을 수 없습니다.")));
 		break;
 	case EErrorType::ET_SPECIALSYMBOL:
@@ -66,7 +80,69 @@ void UEmailWnd::OuputErrorText(EErrorType errorType)
 	}
 }
 
+EQuotationMarkType UEmailWnd::IsquotationMarkNumEven(FString str)
+{
+	int32 quotationMarkNum = 0;
 
+	for (int32 i = 0; i < str.Len(); ++i)
+	{
+		if (str[i] == TCHAR(TEXT('\"')))
+			++quotationMarkNum;
+	}
+
+	EQuotationMarkType type;
+
+	if (quotationMarkNum == 0) type = EQuotationMarkType::QT_ZERO;
+	else if ((quotationMarkNum % 2) == 0) type = EQuotationMarkType::QT_EVEN;
+	else type = EQuotationMarkType::QT_ODD;
+
+	return type;
+}
+
+FString UEmailWnd::GetInQuotationMark(FString str)
+{
+	if (IsquotationMarkNumEven(str) == EQuotationMarkType::QT_ODD) return FString(TEXT(""));
+	else if (IsquotationMarkNumEven(str) == EQuotationMarkType::QT_ZERO) return str;
+
+	FString inQuotationMark;
+
+	FString read = TEXT("\"");
+
+	int32 startindex = str.Find(read, ESearchCase::IgnoreCase, ESearchDir::FromStart, 0);
+	int32 endindex = str.Find(read, ESearchCase::IgnoreCase, ESearchDir::FromEnd, str.Len());
+
+	for (int i = startindex; i < endindex + 1; ++i)
+	{
+		inQuotationMark.AppendChar(str[i]);
+	}
+
+	return inQuotationMark;
+}
+
+bool UEmailWnd::IDCheck(FString checkID)
+{
+	FString inQuotationMark = GetInQuotationMark(checkID);
+
+	UE_LOG(LogTemp, Warning, TEXT("%s::%s"), *checkID, *inQuotationMark);
+	UE_LOG(LogTemp, Warning, TEXT("%d"), checkID.Compare(inQuotationMark));
+
+	if (checkID.Compare(inQuotationMark) == 0)
+	{
+		return true;
+	}
+	else
+	{
+		OuputErrorText(EErrorType::ET_SPECIALSYMBOL);
+		return false;
+	}
+
+	return true;
+}
+
+bool UEmailWnd::DomainCheck(FString chechDomain)
+{
+	return true;
+}
 
 void UEmailWnd::OnEmailCommitted(const FText& Text, ETextCommit::Type CommitMethod)
 {
@@ -80,12 +156,13 @@ void UEmailWnd::OnEmailCommitted(const FText& Text, ETextCommit::Type CommitMeth
 
 		FString domain;
 
-		if (GetAtNum(emailStr) != 0)
+		if (GetIsAt(emailStr))
 		{
 			auto tupleData = GetIdAndDomainInAt(emailStr);
 			id = tupleData.Get<0>();
 			domain = tupleData.Get<1>();
 
+			if (IDCheck(id) && DomainCheck(domain))
 			Text_Output->SetText(FText::FromString(TEXT("ID[") + id + TEXT("]::Domain[") + domain + TEXT("]")));
 		}
 		else OuputErrorText(EErrorType::ET_ATZERO);

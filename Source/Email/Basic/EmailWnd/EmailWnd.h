@@ -5,6 +5,7 @@
 #include "Templates/Tuple.h"
 
 #include "../Enum/ErrorType.h"
+#include "../Enum/QuotationMarkType.h"
 
 #include "EmailWnd.generated.h"
 
@@ -24,9 +25,19 @@ protected:
 	virtual void NativeConstruct() override;
 
 private :
-	int32 GetAtNum(FString str);
+	bool GetIsAt(FString str);
 
 	TTuple <FString, FString> GetIdAndDomainInAt(FString str);
+
+	EQuotationMarkType IsquotationMarkNumEven(FString str);
+
+	FString GetInQuotationMark(FString str);
+
+	bool IDCheck(FString checkID);
+
+	bool DomainCheck(FString checkdomain);
+
+	;
 
 private :
 	void OuputErrorText(EErrorType errorType);
