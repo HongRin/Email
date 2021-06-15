@@ -33,7 +33,13 @@ private :
 
 	FString GetInQuotationMark(FString str);
 
-	bool CheckSymbol(FString str);
+	bool CheckIDSymbol(FString str);
+
+	bool CheckAperiod(FString str);
+
+	bool CheckBlank(FString str);
+
+	bool CheckLength(FString str);
 
 	bool IDCheck(FString checkID);
 	bool DomainCheck(FString checkdomain);

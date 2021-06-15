@@ -77,6 +77,20 @@ void UEmailWnd::OuputErrorText(EErrorType errorType)
 	case EErrorType::ET_SPECIALSYMBOL:
 		Text_Output->SetText(FText::FromString(TEXT("인용 부호밖에 특수 문자가 있습니다.")));
 		break;
+	case EErrorType::ET_IDAPERIOD:
+		Text_Output->SetText(FText::FromString(TEXT("로컬 파트에 . 이 두개 이상 있습니다.")));
+		break;
+	case EErrorType::ET_DOMAINAPERIOD:
+		Text_Output->SetText(FText::FromString(TEXT("도메인에 . 이 두개 이상 있습니다.")));
+	case EErrorType::ET_IDBLANK:
+		Text_Output->SetText(FText::FromString(TEXT("로컬 파트의 시작 혹은 끝 지점에 공백이 있습니다.")));
+		break;
+	case EErrorType::ET_IDLENGTH:
+		Text_Output->SetText(FText::FromString(TEXT("로컬 파트가 너무 길거나 존재하지 않습니다.")));
+		break;
+	case EErrorType::ET_DOMAINLENGTH:
+		Text_Output->SetText(FText::FromString(TEXT("도메인이 너무 길거나 존재 하지 않습니다.")));
+		break;
 	}
 }
 
@@ -120,35 +134,76 @@ FString UEmailWnd::GetInQuotationMark(FString str)
 	return inQuotationMark;
 }
 
-bool UEmailWnd::CheckSymbol(FString str)
+bool UEmailWnd::CheckIDSymbol(FString str)
 {
 	for (int i = 0; i < str.Len(); ++i)
 	{
 		int32 iStr = str[i];
 
-		if (iStr < 33)
-			return false;
-		else if (iStr > 57 && iStr < 61)
-			return false;
-		else if (iStr == 62 || iStr == 64)
-			return false;
-		else if (iStr > 90 && iStr < 94)
-			return false;
-		else if (iStr > 126)
-			return false;
+		if (iStr < 33) return false;
+		else if (iStr > 57 && iStr < 61) return false;
+		else if (iStr == 62 || iStr == 64) return false;
+		else if (iStr > 90 && iStr < 94) return false;
+		else if (iStr > 126) return false;
 	}
 	
 	return true;
 }
 
+bool UEmailWnd::CheckAperiod(FString str)
+{
+	int32 aperiodNum = 0;
+
+	for (int32 i = 0; i < str.Len(); ++i)
+	{
+		if (str[i] == TCHAR(TEXT('.')))
+			++aperiodNum;
+	}
+
+	return aperiodNum < 2;
+}
+
+bool UEmailWnd::CheckBlank(FString str)
+{
+	return (str[0] == TCHAR(TEXT(' ')) || str[str.Len() - 1] == TCHAR(TEXT(' ')));
+}
+
+bool UEmailWnd::CheckLength(FString str)
+{
+	return (!str.IsEmpty() && str.Len() <= 63);
+}
+
 bool UEmailWnd::IDCheck(FString checkID)
 {
-	FString inQuotationMark = GetInQuotationMark(checkID);
-
-	if (checkID.Compare(inQuotationMark) == 0)
+	if (CheckLength(checkID))
 	{
-		if (CheckSymbol(checkID))
-			return true;
+		FString inQuotationMark = GetInQuotationMark(checkID);
+
+		if (checkID.Compare(inQuotationMark) == 0)
+		{
+			if (!CheckBlank(checkID))
+			{
+				if (CheckIDSymbol(checkID))
+				{
+					if (CheckAperiod(checkID)) return true;
+					else
+					{
+						OuputErrorText(EErrorType::ET_IDAPERIOD);
+						return false;
+					}
+				}
+				else
+				{
+					OuputErrorText(EErrorType::ET_SPECIALSYMBOL);
+					return false;
+				}
+			}
+			else
+			{
+				OuputErrorText(EErrorType::ET_IDBLANK);
+				return false;
+			}
+		}
 		else
 		{
 			OuputErrorText(EErrorType::ET_SPECIALSYMBOL);
@@ -157,7 +212,7 @@ bool UEmailWnd::IDCheck(FString checkID)
 	}
 	else
 	{
-		OuputErrorText(EErrorType::ET_SPECIALSYMBOL);
+		OuputErrorText(EErrorType::ET_IDLENGTH);
 		return false;
 	}
 
@@ -166,7 +221,7 @@ bool UEmailWnd::IDCheck(FString checkID)
 
 bool UEmailWnd::DomainCheck(FString chechDomain)
 {
-	return true;
+	return false;
 }
 
 void UEmailWnd::OnEmailCommitted(const FText& Text, ETextCommit::Type CommitMethod)
