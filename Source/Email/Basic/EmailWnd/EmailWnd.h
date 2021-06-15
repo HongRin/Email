@@ -35,15 +35,23 @@ private :
 
 	bool CheckIDSymbol(FString str);
 
+	bool CheckDomainSymbol(FString str);
+
 	bool CheckAperiod(FString str);
 
 	bool CheckBlank(FString str);
 
 	bool CheckLength(FString str);
 
+	bool CheckHyphen(FString str);
+
+	bool IsLabel(FString str);
+
 	bool IDCheck(FString checkID);
+
 	bool DomainCheck(FString checkdomain);
 
+	bool LabelCheck(FString checkLabel);
 
 private :
 	void OuputErrorText(EErrorType errorType);

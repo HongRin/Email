@@ -10,6 +10,7 @@ void UEmailWnd::NativeConstruct()
 
 	GetWorld()->GetFirstPlayerController()->SetInputMode(FInputModeUIOnly());
 	GetWorld()->GetFirstPlayerController()->bShowMouseCursor = true;
+
 }
 
 bool UEmailWnd::GetIsAt(FString str)
@@ -26,6 +27,7 @@ bool UEmailWnd::GetIsAt(FString str)
 	if (atCount != 0)
 	{
 		FString inQuotationMark = GetInQuotationMark(str);
+
 
 		if (str.Compare(inQuotationMark) == 0) return true;
 
@@ -77,19 +79,29 @@ void UEmailWnd::OuputErrorText(EErrorType errorType)
 	case EErrorType::ET_SPECIALSYMBOL:
 		Text_Output->SetText(FText::FromString(TEXT("인용 부호밖에 특수 문자가 있습니다.")));
 		break;
+	case EErrorType::ET_DMSPECIALSYMBOL:
+		Text_Output->SetText(FText::FromString(TEXT("도메인에 특수 문자가 있습니다.")));
+		break;
 	case EErrorType::ET_IDAPERIOD:
 		Text_Output->SetText(FText::FromString(TEXT("로컬 파트에 . 이 두개 이상 있습니다.")));
 		break;
 	case EErrorType::ET_DOMAINAPERIOD:
 		Text_Output->SetText(FText::FromString(TEXT("도메인에 . 이 두개 이상 있습니다.")));
+		break;
 	case EErrorType::ET_IDBLANK:
-		Text_Output->SetText(FText::FromString(TEXT("로컬 파트의 시작 혹은 끝 지점에 공백이 있습니다.")));
+		Text_Output->SetText(FText::FromString(TEXT("이메일 주소의 시작 혹은 끝 지점에 공백이 있습니다.")));
 		break;
 	case EErrorType::ET_IDLENGTH:
 		Text_Output->SetText(FText::FromString(TEXT("로컬 파트가 너무 길거나 존재하지 않습니다.")));
 		break;
 	case EErrorType::ET_DOMAINLENGTH:
 		Text_Output->SetText(FText::FromString(TEXT("도메인이 너무 길거나 존재 하지 않습니다.")));
+		break;
+	case EErrorType::ET_DOMAINHYPHEN:
+		Text_Output->SetText(FText::FromString(TEXT("도메인의 앞과 끝에는 - 를 사용하실 수 없습니다.")));
+		break;
+	case EErrorType::ET_NONELABEL:
+		Text_Output->SetText(FText::FromString(TEXT("도메인에 레이블이 존재하지 않습니다.")));
 		break;
 	}
 }
@@ -142,11 +154,27 @@ bool UEmailWnd::CheckIDSymbol(FString str)
 
 		if (iStr < 33) return false;
 		else if (iStr > 57 && iStr < 61) return false;
-		else if (iStr == 62 || iStr == 64) return false;
+		else if (iStr == 62) return false;
 		else if (iStr > 90 && iStr < 94) return false;
 		else if (iStr > 126) return false;
 	}
 	
+	return true;
+}
+
+bool UEmailWnd::CheckDomainSymbol(FString str)
+{
+	for (int i = 0; i < str.Len(); ++i)
+	{
+		int32 iStr = str[i];
+
+		if (iStr < 45) return false;
+		else if (iStr > 46 && iStr < 48) return false;
+		else if (iStr > 57 && iStr < 65) return false;
+		else if (iStr > 90 && iStr < 97) return false;
+		else if (iStr > 122) return false;
+	}
+
 	return true;
 }
 
@@ -173,6 +201,16 @@ bool UEmailWnd::CheckLength(FString str)
 	return (!str.IsEmpty() && str.Len() <= 63);
 }
 
+bool UEmailWnd::CheckHyphen(FString str)
+{
+	return (str[0] == TCHAR(TEXT('-')) || str[str.Len() - 1] == TCHAR(TEXT('-')));
+}
+
+bool UEmailWnd::IsLabel(FString str)
+{
+	return (str[0] == TCHAR(TEXT('.')));
+}
+
 bool UEmailWnd::IDCheck(FString checkID)
 {
 	if (CheckLength(checkID))
@@ -181,26 +219,18 @@ bool UEmailWnd::IDCheck(FString checkID)
 
 		if (checkID.Compare(inQuotationMark) == 0)
 		{
-			if (!CheckBlank(checkID))
+			if (CheckIDSymbol(checkID))
 			{
-				if (CheckIDSymbol(checkID))
-				{
-					if (CheckAperiod(checkID)) return true;
-					else
-					{
-						OuputErrorText(EErrorType::ET_IDAPERIOD);
-						return false;
-					}
-				}
+				if (CheckAperiod(checkID)) return true;
 				else
 				{
-					OuputErrorText(EErrorType::ET_SPECIALSYMBOL);
+					OuputErrorText(EErrorType::ET_IDAPERIOD);
 					return false;
 				}
 			}
 			else
 			{
-				OuputErrorText(EErrorType::ET_IDBLANK);
+				OuputErrorText(EErrorType::ET_SPECIALSYMBOL);
 				return false;
 			}
 		}
@@ -219,8 +249,54 @@ bool UEmailWnd::IDCheck(FString checkID)
 	return true;
 }
 
-bool UEmailWnd::DomainCheck(FString chechDomain)
+bool UEmailWnd::DomainCheck(FString checkDomain)
 {
+	if (CheckLength(checkDomain))
+	{
+		if (CheckDomainSymbol(checkDomain))
+		{
+			if (CheckAperiod(checkDomain))
+			{
+				if (!CheckHyphen(checkDomain))
+				{
+					if (!IsLabel(checkDomain)) return true;
+					else
+					{
+						OuputErrorText(EErrorType::ET_NONELABEL);
+						return false;
+					}
+				}
+				else
+				{
+					OuputErrorText(EErrorType::ET_DOMAINHYPHEN);
+					return false;
+				}
+			}
+			else
+			{
+				OuputErrorText(EErrorType::ET_DOMAINAPERIOD);
+				return false;
+			}
+		}
+		else
+		{
+			OuputErrorText(EErrorType::ET_DMSPECIALSYMBOL);
+			return false;
+		}
+	}
+	else
+	{
+		OuputErrorText(EErrorType::ET_DOMAINLENGTH);
+		return false;
+	}
+
+	return true;
+}
+
+bool UEmailWnd::LabelCheck(FString checkLabel)
+{
+	
+
 	return false;
 }
 
@@ -238,13 +314,21 @@ void UEmailWnd::OnEmailCommitted(const FText& Text, ETextCommit::Type CommitMeth
 
 		if (GetIsAt(emailStr))
 		{
-			auto tupleData = GetIdAndDomainInAt(emailStr);
-			id = tupleData.Get<0>();
-			domain = tupleData.Get<1>();
+			if (!CheckBlank(emailStr))
+			{
+				auto tupleData = GetIdAndDomainInAt(emailStr);
+				id = tupleData.Get<0>();
+				domain = tupleData.Get<1>();
 
-			if (IDCheck(id) && DomainCheck(domain))
-			Text_Output->SetText(FText::FromString(TEXT("ID[") + id + TEXT("]::Domain[") + domain + TEXT("]")));
+				if (IDCheck(id) && DomainCheck(domain))
+					Text_Output->SetText(FText::FromString(TEXT("ID[") + id + TEXT("]::Domain[") + domain + TEXT("]")));
+			}
+			else  OuputErrorText(EErrorType::ET_IDBLANK);
 		}
-		else OuputErrorText(EErrorType::ET_ATZERO);
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("GetIsAt.false"));
+			OuputErrorText(EErrorType::ET_ATZERO);
+		}
 	}
 }
