@@ -93,6 +93,7 @@ EQuotationMarkType UEmailWnd::IsquotationMarkNumEven(FString str)
 	EQuotationMarkType type;
 
 	if (quotationMarkNum == 0) type = EQuotationMarkType::QT_ZERO;
+	else if (quotationMarkNum == 1) type = EQuotationMarkType::QT_ONE;
 	else if ((quotationMarkNum % 2) == 0) type = EQuotationMarkType::QT_EVEN;
 	else type = EQuotationMarkType::QT_ODD;
 
@@ -101,8 +102,8 @@ EQuotationMarkType UEmailWnd::IsquotationMarkNumEven(FString str)
 
 FString UEmailWnd::GetInQuotationMark(FString str)
 {
-	if (IsquotationMarkNumEven(str) == EQuotationMarkType::QT_ODD) return FString(TEXT(""));
-	else if (IsquotationMarkNumEven(str) == EQuotationMarkType::QT_ZERO) return str;
+	if (IsquotationMarkNumEven(str) == EQuotationMarkType::QT_ONE) return FString(TEXT(""));
+	if (IsquotationMarkNumEven(str) == EQuotationMarkType::QT_ZERO) return str;
 
 	FString inQuotationMark;
 
@@ -119,16 +120,40 @@ FString UEmailWnd::GetInQuotationMark(FString str)
 	return inQuotationMark;
 }
 
+bool UEmailWnd::CheckSymbol(FString str)
+{
+	for (int i = 0; i < str.Len(); ++i)
+	{
+		int32 iStr = str[i];
+
+		if (iStr < 33)
+			return false;
+		else if (iStr > 57 && iStr < 61)
+			return false;
+		else if (iStr == 62 || iStr == 64)
+			return false;
+		else if (iStr > 90 && iStr < 94)
+			return false;
+		else if (iStr > 126)
+			return false;
+	}
+	
+	return true;
+}
+
 bool UEmailWnd::IDCheck(FString checkID)
 {
 	FString inQuotationMark = GetInQuotationMark(checkID);
 
-	UE_LOG(LogTemp, Warning, TEXT("%s::%s"), *checkID, *inQuotationMark);
-	UE_LOG(LogTemp, Warning, TEXT("%d"), checkID.Compare(inQuotationMark));
-
 	if (checkID.Compare(inQuotationMark) == 0)
 	{
-		return true;
+		if (CheckSymbol(checkID))
+			return true;
+		else
+		{
+			OuputErrorText(EErrorType::ET_SPECIALSYMBOL);
+			return false;
+		}
 	}
 	else
 	{

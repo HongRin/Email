@@ -33,11 +33,11 @@ private :
 
 	FString GetInQuotationMark(FString str);
 
-	bool IDCheck(FString checkID);
+	bool CheckSymbol(FString str);
 
+	bool IDCheck(FString checkID);
 	bool DomainCheck(FString checkdomain);
 
-	;
 
 private :
 	void OuputErrorText(EErrorType errorType);

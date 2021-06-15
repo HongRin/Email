@@ -8,5 +8,6 @@ enum class EQuotationMarkType : uint8
 {
 	QT_EVEN       UMETA(DisplayName = Even),
 	QT_ODD		  UMETA(DisplayName = Odd),
-	QT_ZERO		  UMETA(DisplayName = Zero)
+	QT_ZERO		  UMETA(DisplayName = Zero),
+	QT_ONE		  UMETA(DisplayName = One)
 };
