@@ -11,26 +11,44 @@ void UEmailWnd::NativeConstruct()
 	GetWorld()->GetFirstPlayerController()->SetInputMode(FInputModeUIOnly());
 	GetWorld()->GetFirstPlayerController()->bShowMouseCursor = true;
 
+	// 허용되는 도메인을 추가합니다.
+	LabelList.Add(FString(TEXT("naver.com")));
+	LabelList.Add(FString(TEXT("daum.net")));
+	LabelList.Add(FString(TEXT("google.com")));
+	LabelList.Add(FString(TEXT("apple.com")));
+	LabelList.Add(FString(TEXT("outlook.com")));
+
+	// 레이블을 크기에 따라 정렬합니다.
+	LabelList.Sort();
+
+	LabelName.Add(FString(TEXT("naver.com")), FString(TEXT("네이버")));
+	LabelName.Add(FString(TEXT("daum.net")), FString(TEXT("다음")));
+	LabelName.Add(FString(TEXT("google.com")), FString(TEXT("구글")));
+	LabelName.Add(FString(TEXT("apple.com")), FString(TEXT("애플")));
+	LabelName.Add(FString(TEXT("outlook.com")), FString(TEXT("아웃룩")));
+
 }
 
 bool UEmailWnd::GetIsAt(FString str)
 {
 	int32 atCount = 0;
-
-
 	for (int i = 0; i < str.Len(); ++i)
 	{
+		// @ 를 찾았다면
 		if (str[i] == TCHAR(TEXT('@')))
 			atCount++;
 	}
 
+	// @ 이 있다면
 	if (atCount != 0)
 	{
+		// 인용부호안의 문자열을 가져옵니다.
 		FString inQuotationMark = GetInQuotationMark(str);
 
-
+		// str 과 inQuotationMark 이 같다면 트루를 반환합니다.
 		if (str.Compare(inQuotationMark) == 0) return true;
 
+		// 인용 부호안의 @ 의 개수를 체크합니다.
 		int32 AtinQuotationMarkCount = 0;
 		for (int i = 0; i < inQuotationMark.Len(); ++i)
 		{
@@ -54,6 +72,7 @@ TTuple<FString, FString> UEmailWnd::GetIdAndDomainInAt(FString str)
 
 	FString read = TEXT("@");
 
+	// 끝에서 부터 검사하여 @ 를 찾았다면 인덱스를 가져옵니다.
 	int32 index = str.Find(read, ESearchCase::IgnoreCase, ESearchDir::FromEnd, str.Len());
 
 	for (int i = 0; i < index; ++i)
@@ -103,6 +122,9 @@ void UEmailWnd::OuputErrorText(EErrorType errorType)
 	case EErrorType::ET_NONELABEL:
 		Text_Output->SetText(FText::FromString(TEXT("도메인에 레이블이 존재하지 않습니다.")));
 		break;
+	case EErrorType::ET_NOTFINDLABEL:
+		Text_Output->SetText(FText::FromString(TEXT("해당 레이블이 존재하지 않습니다.")));
+		break;
 	}
 }
 
@@ -110,6 +132,7 @@ EQuotationMarkType UEmailWnd::IsquotationMarkNumEven(FString str)
 {
 	int32 quotationMarkNum = 0;
 
+	// " 의 개수를 구합니다.
 	for (int32 i = 0; i < str.Len(); ++i)
 	{
 		if (str[i] == TCHAR(TEXT('\"')))
@@ -135,9 +158,12 @@ FString UEmailWnd::GetInQuotationMark(FString str)
 
 	FString read = TEXT("\"");
 
+	// 처음부터 검사하여 " 를 찾았다면 인덱스를 반환합니다.
 	int32 startindex = str.Find(read, ESearchCase::IgnoreCase, ESearchDir::FromStart, 0);
+	// 끝부터 검사하여 " 를 찾았다면 인덱스를 반환합니다.
 	int32 endindex = str.Find(read, ESearchCase::IgnoreCase, ESearchDir::FromEnd, str.Len());
 
+	// 인용부호 안의 문자열을 구합니다.
 	for (int i = startindex; i < endindex + 1; ++i)
 	{
 		inQuotationMark.AppendChar(str[i]);
@@ -148,6 +174,7 @@ FString UEmailWnd::GetInQuotationMark(FString str)
 
 bool UEmailWnd::CheckIDSymbol(FString str)
 {
+	// 아스키 코드의 값에 따라 허용되는 범위를 지정합니다.
 	for (int i = 0; i < str.Len(); ++i)
 	{
 		int32 iStr = str[i];
@@ -182,6 +209,7 @@ bool UEmailWnd::CheckAperiod(FString str)
 {
 	int32 aperiodNum = 0;
 
+	// . 의 개수를 구합니다.
 	for (int32 i = 0; i < str.Len(); ++i)
 	{
 		if (str[i] == TCHAR(TEXT('.')))
@@ -193,21 +221,25 @@ bool UEmailWnd::CheckAperiod(FString str)
 
 bool UEmailWnd::CheckBlank(FString str)
 {
+	// 이메일을 앞 뒤 사이에 공백이 있다면 true 를 반환합니다.
 	return (str[0] == TCHAR(TEXT(' ')) || str[str.Len() - 1] == TCHAR(TEXT(' ')));
 }
 
 bool UEmailWnd::CheckLength(FString str)
 {
+	// 이메일이 없거나 너무 길다면 false 를 반환합니다.
 	return (!str.IsEmpty() && str.Len() <= 63);
 }
 
 bool UEmailWnd::CheckHyphen(FString str)
 {
+	// 도메인의 처음과 끝에 - 이 있다면 true 를 반환합니다.
 	return (str[0] == TCHAR(TEXT('-')) || str[str.Len() - 1] == TCHAR(TEXT('-')));
 }
 
 bool UEmailWnd::IsLabel(FString str)
 {
+	// 도메인의 처음에 . 이 있다면 true 를 반환합니다.
 	return (str[0] == TCHAR(TEXT('.')));
 }
 
@@ -222,31 +254,15 @@ bool UEmailWnd::IDCheck(FString checkID)
 			if (CheckIDSymbol(checkID))
 			{
 				if (CheckAperiod(checkID)) return true;
-				else
-				{
-					OuputErrorText(EErrorType::ET_IDAPERIOD);
-					return false;
-				}
+				else OuputErrorText(EErrorType::ET_IDAPERIOD);
 			}
-			else
-			{
-				OuputErrorText(EErrorType::ET_SPECIALSYMBOL);
-				return false;
-			}
+			else OuputErrorText(EErrorType::ET_SPECIALSYMBOL);
 		}
-		else
-		{
-			OuputErrorText(EErrorType::ET_SPECIALSYMBOL);
-			return false;
-		}
+		else OuputErrorText(EErrorType::ET_SPECIALSYMBOL);
 	}
-	else
-	{
-		OuputErrorText(EErrorType::ET_IDLENGTH);
-		return false;
-	}
+	else OuputErrorText(EErrorType::ET_IDLENGTH);
 
-	return true;
+	return false;
 }
 
 bool UEmailWnd::DomainCheck(FString checkDomain)
@@ -260,44 +276,42 @@ bool UEmailWnd::DomainCheck(FString checkDomain)
 				if (!CheckHyphen(checkDomain))
 				{
 					if (!IsLabel(checkDomain)) return true;
-					else
-					{
-						OuputErrorText(EErrorType::ET_NONELABEL);
-						return false;
-					}
+					else OuputErrorText(EErrorType::ET_NONELABEL);
 				}
-				else
-				{
-					OuputErrorText(EErrorType::ET_DOMAINHYPHEN);
-					return false;
-				}
+				else OuputErrorText(EErrorType::ET_DOMAINHYPHEN);
 			}
-			else
-			{
-				OuputErrorText(EErrorType::ET_DOMAINAPERIOD);
-				return false;
-			}
+			else OuputErrorText(EErrorType::ET_DOMAINAPERIOD);
 		}
-		else
-		{
-			OuputErrorText(EErrorType::ET_DMSPECIALSYMBOL);
-			return false;
-		}
+		else OuputErrorText(EErrorType::ET_DMSPECIALSYMBOL);
 	}
-	else
-	{
-		OuputErrorText(EErrorType::ET_DOMAINLENGTH);
-		return false;
-	}
+	else OuputErrorText(EErrorType::ET_DOMAINLENGTH);
 
-	return true;
+	return false;
 }
 
 bool UEmailWnd::LabelCheck(FString checkLabel)
 {
-	
+	int32 start = 0;
+	int32 end = LabelList.Num() - 1;
+	int32 mid;
+
+	// 이진 탐색으로 유효한 레이블을 찾습니다.
+	while (start <= end) {
+		mid = (start + end) / 2;
+
+		int32 compareResult = checkLabel.Compare(LabelList[mid]);
+		if (compareResult == 0) return true;
+		else if (compareResult == -1) end = mid - 1;
+		else start = mid + 1;
+	}
 
 	return false;
+}
+
+FString UEmailWnd::GetLabel(FString label)
+{
+	// 레이블의 이름을 가져옵니다.
+	return *LabelName.Find(label);
 }
 
 void UEmailWnd::OnEmailCommitted(const FText& Text, ETextCommit::Type CommitMethod)
@@ -321,14 +335,16 @@ void UEmailWnd::OnEmailCommitted(const FText& Text, ETextCommit::Type CommitMeth
 				domain = tupleData.Get<1>();
 
 				if (IDCheck(id) && DomainCheck(domain))
-					Text_Output->SetText(FText::FromString(TEXT("ID[") + id + TEXT("]::Domain[") + domain + TEXT("]")));
+				{	
+					if (LabelCheck(domain))
+					{
+						Text_Output->SetText(FText::FromString(TEXT("ID[") + id + TEXT("]::Domain[") + GetLabel(domain) + TEXT("]")));
+					}
+					else OuputErrorText(EErrorType::ET_NOTFINDLABEL);
+				}
 			}
 			else  OuputErrorText(EErrorType::ET_IDBLANK);
 		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("GetIsAt.false"));
-			OuputErrorText(EErrorType::ET_ATZERO);
-		}
+		else OuputErrorText(EErrorType::ET_ATZERO);
 	}
 }

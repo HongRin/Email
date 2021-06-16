@@ -15,5 +15,6 @@ enum class EErrorType : uint8
 	ET_IDLENGTH			UMETA(DisplayName = IdLength),
 	ET_DOMAINLENGTH		UMETA(DisplayName = DomainLength),
 	ET_DOMAINHYPHEN		UMETA(DisplayName = DomainHyphen),
-	ET_NONELABEL		UMETA(DisplayName = NoneLabel)
+	ET_NONELABEL		UMETA(DisplayName = NoneLabel),
+	ET_NOTFINDLABEL		UMETA(DisplayName = NotFindLabel)
 };
